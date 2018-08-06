@@ -1,0 +1,19 @@
+{
+  "name": "ssh_srv",
+  "version": "1.0.0",
+  "description": "simple ssh server test",
+  "main": "index.js",
+  "dependencies": {
+    "@types/ssh2": "^0.5.35",
+    "ssh2": "^0.6.1"
+  },
+  "devDependencies": {
+    "@types/node": "^10.5.5",
+    "typescript": "^3.0.1"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
