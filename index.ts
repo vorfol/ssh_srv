@@ -13,6 +13,7 @@ declare interface BuffEq {
 };
 
 import BuffEq = require('buffer-equal-constant-time');
+import { Attributes } from 'ssh2-streams';
 
 
 new ssh2.Server({
@@ -80,6 +81,18 @@ new ssh2.Server({
           sftpStream.status(reqid, STATUS_CODE.OK);
           let inspected = require('util').inspect(data);
           console.log(`Write to file ${openFiles[fnum]} at offset ${offset}: ${inspected}`);
+        }).on('STAT', function(reqid, path) {
+          // fake the status
+          let attr : Attributes = { uid : 1, 
+                                    atime : 2,
+                                    gid : 3,
+                                    mode : 4,
+                                    mtime : 5,
+                                    size : 6
+                                  };
+          sftpStream.attrs(reqid, attr);
+          //sftpStream.status(reqid, STATUS_CODE.OK);
+          console.log(`Status of ${path} is ${JSON.stringify(attr)}`);
         }).on('CLOSE', function(reqid, handle) {
           let fnum;
           if (handle.length !== 4 || !openFiles[(fnum = handle.readUInt32BE(0, true))]) {
