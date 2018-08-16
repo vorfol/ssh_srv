@@ -13,8 +13,10 @@ declare interface BuffEq {
 };
 
 import BuffEq = require('buffer-equal-constant-time');
-import { Attributes } from 'ssh2-streams';
+import { Attributes, InputAttributes } from 'ssh2-streams';
 
+//global, for any sessions
+let fileStats : {path: string, attr: Attributes}[] = [];
 
 new ssh2.Server({
   hostKeys: [fs.readFileSync('one.key')]
@@ -83,16 +85,25 @@ new ssh2.Server({
           console.log(`Write to file ${openFiles[fnum]} at offset ${offset}: ${inspected}`);
         }).on('STAT', function(reqid, path) {
           // fake the status
-          let attr : Attributes = { uid : 1, 
-                                    atime : 2,
-                                    gid : 3,
-                                    mode : 4,
-                                    mtime : 5,
-                                    size : 6
-                                  };
-          sftpStream.attrs(reqid, attr);
-          //sftpStream.status(reqid, STATUS_CODE.OK);
-          console.log(`Status of ${path} is ${JSON.stringify(attr)}`);
+          let fileAattr = fileStats.find((value) => value.path === path);
+          if (fileAattr) {
+            sftpStream.attrs(reqid, fileAattr.attr);
+            console.log(`Status of ${path} is ${JSON.stringify(fileAattr.attr)}`);
+          } else {
+            console.log(`Status of ${path} is undefined`);
+            sftpStream.status(reqid, STATUS_CODE.NO_SUCH_FILE);
+          }
+        }).on('SETSTAT', function(reqID: number, path: string, attrs: InputAttributes) {
+          // fake the status
+          let fileAattrIdx = fileStats.findIndex((value) => value.path === path);
+          if (fileAattrIdx >= 0) {
+            fileStats[fileAattrIdx].attr = Object.assign(fileStats[fileAattrIdx].attr, attrs);
+          } else {
+            let attr = {} as Attributes;
+            attr = Object.assign(attr, attrs);
+            fileStats.push({path, attr});
+          }
+          sftpStream.status(reqID, STATUS_CODE.OK);
         }).on('CLOSE', function(reqid, handle) {
           let fnum;
           if (handle.length !== 4 || !openFiles[(fnum = handle.readUInt32BE(0, true))]) {
